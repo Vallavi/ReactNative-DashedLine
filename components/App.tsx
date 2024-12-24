@@ -1,66 +1,64 @@
-import React, { useState, useRef } from "react";
-import {
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  Text,
-  Animated,
-} from "react-native";
+import React, { useState } from "react";
+import { StyleSheet, View, TouchableOpacity, Text } from "react-native";
 
 const App = () => {
-  const [isDashed, setIsDashed] = useState(true);
-  const animationProgress = useRef(new Animated.Value(1)).current;
+  const totalDots = 10; // Total number of dots in the line
+  const [connectedDots, setConnectedDots] = useState(
+    Array(totalDots).fill(false)
+  );
 
-  const handlePressIn = () => {
-    Animated.timing(animationProgress, {
-      toValue: 0, // Transition to solid line
-      duration: 2000, // Time it takes to fully change
-      useNativeDriver: false, // Required for non-transform animations
-    }).start(() => setIsDashed(false)); // Set to solid when animation completes
+  const handleDotPress = (index) => {
+    setConnectedDots((prev) => {
+      const newDots = [...prev];
+      if (index === 0 || newDots[index - 1]) {
+        // Connect the dot only if it's the first dot or the previous one is connected
+        newDots[index] = true;
+      }
+      return newDots;
+    });
   };
 
-  const handlePressOut = () => {
-    animationProgress.stopAnimation(); // Stop the animation if the user releases
-    if (isDashed) {
-      animationProgress.setValue(1); // Reset if the line is still dashed
-    }
-  };
-
-  const refreshLineStyle = () => {
-    setIsDashed(true);
-    animationProgress.setValue(1); // Reset animation progress
+  const resetLine = () => {
+    setConnectedDots(Array(totalDots).fill(false)); // Reset all dots to disconnected
   };
 
   return (
     <View style={styles.container}>
-      {/* Line */}
-      <TouchableOpacity
-        activeOpacity={1}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={styles.lineContainer}
-      >
-        <Animated.View
-          style={[
-            styles.line,
-            {
-              borderStyle: isDashed ? "dashed" : "solid",
-              borderWidth: animationProgress.interpolate({
-                inputRange: [0, 1],
-                outputRange: [2, 1], // Start at dashed (2px width), go to solid
-              }),
-              opacity: animationProgress.interpolate({
-                inputRange: [0, 1],
-                outputRange: [1, 0.8], // Optional opacity effect
-              }),
-            },
-          ]}
-        />
-      </TouchableOpacity>
+      <Text style={styles.title}>Connect the Dotted Line</Text>
 
-      {/* Refresh Button */}
-      <TouchableOpacity style={styles.refreshButton} onPress={refreshLineStyle}>
-        <Text style={styles.refreshButtonText}>Refresh</Text>
+      {/* Dotted Line with Connecting Segments */}
+      <View style={styles.lineContainer}>
+        {Array.from({ length: totalDots }).map((_, index) => (
+          <View key={index} style={styles.dotAndLineContainer}>
+            {/* Dot */}
+            <TouchableOpacity
+              style={[
+                styles.dot,
+                { backgroundColor: connectedDots[index] ? "#000" : "#ccc" },
+              ]}
+              onPress={() => handleDotPress(index)}
+            />
+            {/* Line Segment */}
+            {index < totalDots - 1 && (
+              <View
+                style={[
+                  styles.lineSegment,
+                  {
+                    backgroundColor:
+                      connectedDots[index] && connectedDots[index + 1]
+                        ? "#000"
+                        : "#ccc",
+                  },
+                ]}
+              />
+            )}
+          </View>
+        ))}
+      </View>
+
+      {/* Reset Button */}
+      <TouchableOpacity style={styles.resetButton} onPress={resetLine}>
+        <Text style={styles.resetButtonText}>Reset</Text>
       </TouchableOpacity>
     </View>
   );
@@ -73,23 +71,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#f8f9fa",
   },
+  title: {
+    fontSize: 18,
+    marginBottom: 20,
+    fontWeight: "bold",
+    color: "#333",
+  },
   lineContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     width: "80%",
     marginBottom: 30,
   },
-  line: {
-    width: "100%",
+  dotAndLineContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  dot: {
+    width: 15,
+    height: 15,
+    borderRadius: 7.5,
+    backgroundColor: "#ccc",
+  },
+  lineSegment: {
+    width: 20,
     height: 2,
-    borderColor: "#000",
+    backgroundColor: "#ccc",
   },
-  refreshButton: {
+  resetButton: {
     backgroundColor: "#007BFF",
-    padding: 15,
-    borderRadius: 8,
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
   },
-  refreshButtonText: {
+  resetButtonText: {
     color: "#fff",
-    fontSize: 16,
     fontWeight: "bold",
   },
 });
